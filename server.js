@@ -21,8 +21,20 @@ app.use(cors());
 
 //@ ROUTERS
 const HEALTH_ROUTER = require("./routers/health");
+const USER_ROUTER = require("./routers/users");
+const ESTABLISHMENT_ROUTER = require("./routers/establishments");
+const INVENTORIES_ROUTER = require("./routers/inventories");
+const SALES_ROUTER = require("./routers/sales");
+const TABLES_ROUTER = require("./routers/tables");
+const REPORTS_ROUTER = require("./routers/reports");
 
 app.use(HEALTH_ROUTER);
+app.use(USER_ROUTER);
+app.use(ESTABLISHMENT_ROUTER);
+app.use(INVENTORIES_ROUTER);
+app.use(SALES_ROUTER);
+app.use(TABLES_ROUTER);
+app.use(REPORTS_ROUTER);
 
 
 //@ CONNECTION TO MONGODB
