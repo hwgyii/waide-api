@@ -317,9 +317,9 @@ router.patch("/sales/complete/:salesId", verifySessionToken, limitMinimumAccessT
   }
 });
 
-router.get("/salesToday", async (req, res) => {
+router.get("/salesToday", verifySessionToken, limitMinimumAccessTo(ROLES.ESTABLISHMENT), async (req, res) => {
   try {
-    const establishment = await ESTABLISHMENT.findOne({ user: "663482bf47baa37714fb9ede", archived: false });
+    const establishment = await ESTABLISHMENT.findOne({ user: req.user._id, archived: false });
 
     if (isEmpty(establishment)) {
       return res.status(HTTP_CODES.UNPROCESSABLE_ENTITY).json({

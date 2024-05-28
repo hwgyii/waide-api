@@ -16,6 +16,7 @@ const INVENTORY = require("../schemas/inventories.js");
 const REVIEW = require("../schemas/review.js");
 const SALES = require("../schemas/sales.js");
 const dayjs = require("dayjs");
+const { createSalesReport, createInventoryReport } = require("../utilities/pdfmaking/pdf.js");
 
 router.get("/reports/gross-sales", verifySessionToken, limitMinimumAccessTo(ROLES.CUSTOMER), async (req, res) => {
   try {
@@ -58,8 +59,93 @@ router.get("/reports/gross-sales", verifySessionToken, limitMinimumAccessTo(ROLE
       totalSales,
     });
   } catch (error) {
-    console.error("Error in /reports/gross-sales: ", error);
-    return res.status(HTTP_CODES.SERVER_ERROR).json({ message: ERROR_MESSAGES.SERVER_ERROR });
+    console.error(error);
+    return res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).json({
+      message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR
+    });
+  }
+});
+
+router.get("/reports/establishment/sales", async (req, res) => {
+  try {
+    const { to, from, establishmentId } = req.query;
+
+    const establishment = await ESTABLISHMENT.findOne({ _id: establishmentId, archived: false });
+
+    if (isEmpty(establishment)) {
+      return res.status(HTTP_CODES.NOT_FOUND).json({
+        message: "Establishment not found"
+      });
+    }
+
+    const findOptions = {
+      $and: [
+        { "createdAt": { $gte: dayjs(from).startOf("day") } },
+        { "createdAt": { $lte: dayjs(to).endOf("day") } },
+        { establishment: establishment._id },
+        { archived: false }
+      ],
+    };
+
+    const sales = await SALES.find(findOptions);
+
+    const totalSales = sales.reduce((acc, sale) => {
+      return acc+ sale.totalPrice;
+    }, 0).toFixed(2);
+
+    const date = { from: dayjs(from).format("DD/MM/YYYY"), to: dayjs(to).format("DD/MM/YYYY") };
+    const establishmentData = { name: establishment.name, address: establishment.address };
+    const tableHeader = ["number", "date", "salesId", "totalPrice"];
+    const tableData = sales.map((sale, index) => {
+      return {
+        number: index + 1,
+        date: dayjs(sale.createdAt).format("DD/MM/YYYY"),
+        salesId: sale._id.toString().slice(-10),
+        totalPrice: sale.totalPrice.toFixed(2),
+      };
+    });
+
+    createSalesReport(req, res, `${establishment.name}'s Sales Report`, establishmentData, date, tableHeader, tableData, totalSales);
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).json({
+      message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR
+    });
+  }
+});
+
+router.get("/reports/establishment/inventory", async (req, res) => {
+  try {
+    const { establishmentId } = req.query;
+
+    const establishment = await ESTABLISHMENT.findOne({ _id: establishmentId, archived: false });
+
+    if (isEmpty(establishment)) {
+      return res.status(HTTP_CODES.NOT_FOUND).json({
+        message: "Establishment not found"
+      });
+    }
+
+    const inventories = await INVENTORY.find({ establishment: establishment._id, archived: false });
+
+    const establishmentData = { name: establishment.name, address: establishment.address };
+    const tableHeader = ["number", "name", "quantity", "price"];
+    const tableData = inventories.map((inventory, index) => {
+      return {
+        number: index + 1,
+        name: inventory.name,
+        quantity: inventory.quantity,
+        price: inventory.price.toFixed(2),
+      };
+    });
+
+    createInventoryReport(req, res, `${establishment.name}'s Inventory Report`, establishmentData, dayjs().format("MMM DD, YYYY hh:mm A"), tableHeader, tableData);
+
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).json({
+      message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR
+    });
   }
 });
 
