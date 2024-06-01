@@ -139,7 +139,7 @@ router.get("/reports/establishment/inventory", async (req, res) => {
       };
     });
 
-    createInventoryReport(req, res, `${establishment.name}'s Inventory Report`, establishmentData, dayjs().format("MMM DD, YYYY hh:mm A"), tableHeader, tableData);
+    createInventoryReport(req, res, `${establishment.name}'s Inventory Report`, establishmentData, dayjs().add(8, "hours").format("MMM DD, YYYY hh:mm A"), tableHeader, tableData);
 
   } catch (error) {
     console.error(error);

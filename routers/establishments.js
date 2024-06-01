@@ -141,6 +141,26 @@ router.post("/establishment/review/create", verifySessionToken, limitMinimumAcce
   }
 });
 
+router.get("/establishment/reviews", verifySessionToken, limitMinimumAccessTo(ROLES.ESTABLISHMENT), async (req, res) => {
+  try {
+    const establishment = await ESTABLISHMENT.findOne({ user: req.user._id, archived: false });
+
+    const reviews = await REVIEW.find({ establishment: establishment._id, archived: false }).populate({
+      path: "user",
+      model: USER,
+      select: "fullName"
+    });
+
+    return res.status(HTTP_CODES.SUCCESS).json({
+      reviews
+    });
+  } catch (error) {
+    return res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).json({
+      message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR
+    });
+  }
+});
+
 router.get("/establishment/:establishmentId", verifySessionToken, limitMinimumAccessTo(ROLES.CUSTOMER), async (req, res) => {
   try {
 
@@ -234,16 +254,17 @@ router.patch("/establishment/settings", verifySessionToken, limitMinimumAccessTo
 // what if logo yung papalitan? not included in this route yet.
 router.patch("/establishment/:establishmentId", verifySessionToken, limitMinimumAccessTo(ROLES.CUSTOMER), async (req, res) => {
   try {
-
     const validatedFields = validateFields(req.body, {
       name: { type: "string", required: true },
       // logo: { type: "string", required: true },
       address: { type: "string", required: true },
-      type: { type: "number", required: true },
+      // type: { type: "number", required: true },
+      operatingHours: { type: "string", required: true },
       // availability: { type: "boolean", required: true } // this field will be array of dates
     });
 
     if (validatedFields.status === HTTP_CODES.UNPROCESSABLE_ENTITY) {
+      console.log(validatedFields.message);
       return res.status(HTTP_CODES.UNPROCESSABLE_ENTITY).json({
         message: validatedFields.message
       });
@@ -268,6 +289,7 @@ router.patch("/establishment/:establishmentId", verifySessionToken, limitMinimum
     });
 
   } catch (error) {
+    console.error(error);
     return res.status(HTTP_CODES.INTERNAL_SERVER_ERROR).json({
       message: ERROR_MESSAGES.INTERNAL_SERVER_ERROR
     });
