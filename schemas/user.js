@@ -10,6 +10,7 @@ const USER_SCHEMA = new mongoose.Schema({
   authToken: { type: String, select: false },
   role: { type: Number, required: true, default: ROLES.UNVERIFIED },
   archived: { type: Boolean, required: true, default: false },
+  expoToken: { type: String },
 }, {timestamps: true, versionKey: false});
 
 USER_SCHEMA.index({ email: 1, authToken: 1 });

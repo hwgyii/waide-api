@@ -186,4 +186,38 @@ router.get("/user/me", verifySessionToken, async (req, res) => {
   }
 });
 
+router.patch("/user/add-expo-token", verifySessionToken, async (req, res) => {
+  try {
+    const { body } = req;
+
+    const validatedFields = validateFields(body, {
+      expoToken: { type: "string", required: true },
+    });
+
+    if (validatedFields.status === HTTP_CODES.UNPROCESSABLE_ENTITY) {
+      return res.status(HTTP_CODES.UNPROCESSABLE_ENTITY).json({
+        message: validatedFields.message
+      });
+    }
+
+    const user = await USER.updateOne({ _id: req.user._id }, { expoToken: validatedFields.expoToken });
+
+    if (isEmpty(user)) {
+      return res.status(HTTP_CODES.UNPROCESSABLE_ENTITY).json({
+        message: ERROR_MESSAGES.NO_USER_FOUND
+      });
+    }
+
+    return res.status(HTTP_CODES.SUCCESS).json({
+      message: "Expo Token Added."
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(HTTP_CODES.SERVER_ERROR).json({
+      error,
+      message: ERROR_MESSAGES.DEFAULT_SERVER_ERROR
+    });
+  }
+});
+
 module.exports = router;
