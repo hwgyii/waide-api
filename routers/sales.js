@@ -3,6 +3,8 @@ const router = express.Router();
 const { isEmpty, get } = require("lodash");
 const dayjs = require("dayjs");
 const uniqid = require("uniqid");
+const { default: Expo } = require("expo-server-sdk");
+const expo = new Expo();
 
 const { HTTP_CODES, ERROR_MESSAGES } = require("../common/http-codes-and-messages.js");
 const { validateFields } = require("../utilities/services/validation.js");
@@ -16,14 +18,17 @@ const INVENTORY_SALES = require("../schemas/inventory-sales.js");
 const DELIVERY = require("../schemas/delivery.js");
 const TABLE = require("../schemas/table.js");
 const ESTABLISHMENT_SETTINGS = require("../schemas/establishment-settings.js");
+const USER = require("../schemas/user.js");
 
 router.post("/sales/create", verifySessionToken, limitMinimumAccessTo(ROLES.CUSTOMER), async (req, res) => {
   try {
     const { body } = req;
 
     //validate fields here
-    console.log(JSON.stringify(body, null, 2));
-    const establishment = await ESTABLISHMENT.findOne({ _id: body.establishmentId, archived: false });
+    const establishment = await ESTABLISHMENT.findOne({ _id: body.establishmentId, archived: false }).populate({
+      path: "user",
+      model: USER,
+    });
 
     if (isEmpty(establishment)) {
       return res.status(HTTP_CODES.UNPROCESSABLE_ENTITY).json({
@@ -137,6 +142,16 @@ router.post("/sales/create", verifySessionToken, limitMinimumAccessTo(ROLES.CUST
       // NOT YET IMPLEMENTED
     //CHECK IF FOR A TABLE YUNG SALES TAPOS KAPAG YES, IPOPUSH MO YUNG NEW SALE SA SALES ARRAY SA TABLE AND INCREMENT THE TOTAL SA TOTALPRICE SA TABLE
 
+    if (get(body, "onlineOrder", false)) {
+      expo.sendPushNotificationsAsync([
+        {
+          to: establishment.user.expoToken,
+          title: "Waide - Online Order",
+          body: `${table.name} has a new online order.`
+        }
+      ])
+    }
+
     return res.status(HTTP_CODES.SUCCESS).json({
       message: "Sale created successfully.",
       sale: newSale,
@@ -156,7 +171,10 @@ router.post("/sales/delivery/create", verifySessionToken, limitMinimumAccessTo(R
 
     const { body } = req;
 
-    const establishment = await ESTABLISHMENT.findOne({ _id: body.establishmentId, archived: false });
+    const establishment = await ESTABLISHMENT.findOne({ _id: body.establishmentId, archived: false }).populate({
+      path: "user",
+      model: USER,
+    });
 
     if (isEmpty(establishment)) {
       return res.status(HTTP_CODES.UNPROCESSABLE_ENTITY).json({
@@ -212,6 +230,14 @@ router.post("/sales/delivery/create", verifySessionToken, limitMinimumAccessTo(R
     }).save();
 
     const inventories = await INVENTORY.find({ establishment: establishment._id, type: 0, archived: false });
+
+    expo.sendPushNotificationsAsync([
+      {
+        to: establishment.user.expoToken,
+        title: "Waide - Delivery Request",
+        body: "A new delivery request has been made."
+      }
+    ])
 
     return res.status(HTTP_CODES.SUCCESS).json({
       message: "Order has been requested.",
