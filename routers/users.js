@@ -146,6 +146,7 @@ router.post("/user/create", async (req, res) => {
       firstName: validatedFields.firstName,
       lastName: validatedFields.lastName,
       fullName: `${validatedFields.firstName} ${validatedFields.lastName}`,
+      role: body.role || ROLES.UNVERIFIED
     }).save();
     
     return res.status(HTTP_CODES.SUCCESS).json({
