@@ -45,11 +45,11 @@ router.post("/sales/create", verifySessionToken, limitMinimumAccessTo(ROLES.CUST
     const errors = [];
     await Promise.all(Object.keys(body.orders).map(async (productId) => {
 
-      const inventory = await INVENTORY.findOne({ _id: productId, type: 0, archived: false });
+      const inventory = await INVENTORY.findOne({ _id: productId, archived: false });
 
       if (isEmpty(inventory)) errors.push(`${inventory.name} is not found in the inventories.`);
 
-      if (inventory.quantity < body.orders[productId].orderSize) errors.push(`${inventory.name} has less than ${body.orders[productId].orderSize} in stock.`);
+      if (inventory.quantity < body.orders[productId].orderSize && inventory.type !== 1) errors.push(`${inventory.name} has less than ${body.orders[productId].orderSize} in stock.`);
     }));
 
     if (errors.length > 0) {
@@ -79,7 +79,14 @@ router.post("/sales/create", verifySessionToken, limitMinimumAccessTo(ROLES.CUST
     
     let table;
     if (!isEmpty(body.table)) {
-      table = await TABLE.findOne({ _id: body.table, archived: false });
+      table = await TABLE.findOne({ _id: body.table, availability: 1, archived: false });
+
+      if (isEmpty(table)) {
+        return res.status(HTTP_CODES.UNPROCESSABLE_ENTITY).json({
+          message: "Table is not occupied."
+        });
+      }
+      
       newSaleData.table = body.table;
       newSaleData.description = `${table.name}`
     }
@@ -195,7 +202,7 @@ router.post("/sales/delivery/create", verifySessionToken, limitMinimumAccessTo(R
 
       if (isEmpty(inventory)) errors.push(`${inventory.name} is not found in the inventories.`);
 
-      if (inventory.quantity < body.orders[productId].orderSize) errors.push(`${inventory.name} has less than ${body.orders[productId].orderSize} in stock.`);
+      if (inventory.quantity < body.orders[productId].orderSize && inventory.type !== 1) errors.push(`${inventory.name} has less than ${body.orders[productId].orderSize} in stock.`);
     }));
 
     if (errors.length > 0) {

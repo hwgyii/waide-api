@@ -27,6 +27,7 @@ const INVENTORIES_ROUTER = require("./routers/inventories");
 const SALES_ROUTER = require("./routers/sales");
 const TABLES_ROUTER = require("./routers/tables");
 const REPORTS_ROUTER = require("./routers/reports");
+const INVOICES_ROUTER = require("./routers/invoices");
 
 app.use(HEALTH_ROUTER);
 app.use(USER_ROUTER);
@@ -35,6 +36,7 @@ app.use(INVENTORIES_ROUTER);
 app.use(SALES_ROUTER);
 app.use(TABLES_ROUTER);
 app.use(REPORTS_ROUTER);
+app.use(INVOICES_ROUTER);
 
 
 //@ CONNECTION TO MONGODB

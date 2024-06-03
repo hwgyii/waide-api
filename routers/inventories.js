@@ -19,12 +19,12 @@ router.post("/inventory/create", verifySessionToken, limitMinimumAccessTo(ROLES.
     }
 
     const { body } = req;
-
+    console.log(body);
     const newInventory = await new INVENTORY({
       establishment: establishment._id,
       name: body.name,
       description: body.description,
-      quantity: body.quantity,
+      quantity: get(body, "type", 0) === 0 ? body.quantity : Infinity,
       price: body.price,
       type: get(body, "type", 0)
     }).save();
@@ -45,7 +45,7 @@ router.patch("/inventory/update/:inventoryId", verifySessionToken, limitMinimumA
     const { inventoryId } = req.params;
     const { body } = req;
 
-    const updatedInventory = await INVENTORY.findOneAndUpdate({ _id: inventoryId, archived: false, type: 0 }, body, { new: true });
+    const updatedInventory = await INVENTORY.findOneAndUpdate({ _id: inventoryId, archived: false, }, {...body, quantity: get(body, "type", 0) === 0 ? body.quantity : Infinity }, { new: true });
 
     return res.status(HTTP_CODES.SUCCESS).json({
       message: "Inventory updated successfully.",
@@ -84,7 +84,7 @@ router.delete("/inventory/delete/:inventoryId", verifySessionToken, limitMinimum
   try {
     const { inventoryId } = req.params;
 
-    await INVENTORY.findOneAndUpdate({ _id: inventoryId, type: 0, archived: false }, { archived: true }, { new: true });
+    await INVENTORY.findOneAndUpdate({ _id: inventoryId, archived: false }, { archived: true }, { new: true });
 
     return res.status(HTTP_CODES.SUCCESS).json({
       message: "Inventory deleted successfully."
