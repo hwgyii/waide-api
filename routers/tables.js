@@ -129,7 +129,7 @@ router.patch("/tables/establishment/update-availability/:tableId", verifySession
         }
       }
 
-      tableToUpdate = await TABLE.findOneAndUpdate({ _id: tableId, establishment: establishment._id, archived: false }, { availability, currentToken: "", passcode: "", sales: [] }, { new: true });
+      tableToUpdate = await TABLE.findOneAndUpdate({ _id: tableId, establishment: establishment._id, archived: false }, { availability, currentToken: "", passcode: "", sales: [], totalPrice: 0 }, { new: true });
     } else {
       tableToUpdate = await TABLE.findOneAndUpdate({ _id: tableId, establishment: establishment._id, archived: false }, { availability, passcode: availability === TABLE_AVAILABILITY.OCCUPIED ? generateSixDigitNumberAsString() : "", currentToken: availability === TABLE_AVAILABILITY.OCCUPIED ? uniqid().slice(-6) : ""  }, { new: true });
     }
@@ -238,7 +238,7 @@ router.post("/tables/access", verifySessionToken, limitMinimumAccessTo(ROLES.CUS
       });
     }
 
-    const inventories = await INVENTORY.find({ establishment: table.establishment._id, archived: false });
+    const inventories = await INVENTORY.find({ establishment: table.establishment._id, type: 0, archived: false });
 
     return res.status(HTTP_CODES.SUCCESS).json({
       message: `Table ${table.name} has been accessed.`,
